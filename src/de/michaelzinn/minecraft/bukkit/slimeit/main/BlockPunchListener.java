@@ -28,15 +28,17 @@ import de.michaelzinn.minecraft.bukkit.slimeit.bukkitplus.MaterialData;
  */
 public class BlockPunchListener implements Listener {
 
-	// private final SlimeIt plugin;
+	private final SlimeIt plugin;
 	SlimeRules slimeRules = new SlimeRules();
 
 	public BlockPunchListener(SlimeIt main) {
-		// plugin = main;
+		plugin = main;
 	}
 
 	@EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
 	public void playerBreak(BlockBreakEvent event) {
+		
+		//WorldGuard check not needed here. WG will have handled it already due to lower priority.
 		
 		// blocks with slime should drop as items without slime + 1 slimeball
 		Block block = event.getBlock();
@@ -97,6 +99,8 @@ public class BlockPunchListener implements Listener {
 
 	@EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
 	public void playerInteract(PlayerInteractEvent event) {
+		
+		
 		Block block = event.getClickedBlock();
 		if (block == null) {
 			return;
@@ -112,41 +116,48 @@ public class BlockPunchListener implements Listener {
 		case LEFT_CLICK_BLOCK:
 			if (MaterialData.SMOOTH_BRICK.matches(block)) {
 				if (B.isPickaxe(tool)) {
-					MaterialData.CRACKED_SMOOTH_BRICK.applyTo(block);
+					//Check to make sure they're allowed to modify the block they're trying to crack
+					if(plugin.wgenabled && plugin.wg.canBuild(player, block.getLocation())) {
+						MaterialData.CRACKED_SMOOTH_BRICK.applyTo(block);
+					}
 				}
 			}
 			else if (slimeRules.hasSlimeOnIt(block, event.getBlockFace())) {
-				B.replace(block, slimeRules.withoutSlime(block));
-				world.dropItemNaturally(block.getRelative(face).getLocation(), new ItemStack(Material.SLIME_BALL, 1));
-				world.playSound(block.getLocation(), Sound.SLIME_ATTACK, 1, 1);
+				//Check to make sure they're allowed to remove slime from this block
+				if(plugin.wgenabled && plugin.wg.canBuild(player, block.getLocation())) {
+					B.replace(block, slimeRules.withoutSlime(block));
+					world.dropItemNaturally(block.getRelative(face).getLocation(), new ItemStack(Material.SLIME_BALL, 1));
+					world.playSound(block.getLocation(), Sound.SLIME_ATTACK, 1, 1);
+				}
 			}
 			break;
 
 		case RIGHT_CLICK_BLOCK:
 			if (tool.getType() == Material.SLIME_BALL) {
 				if (slimeRules.canGetSlimeOnIt(block, event.getBlockFace())) {
-					int targetAmount = tool.getAmount() - 1;
-					if (targetAmount <= 0) {
-						player.setItemInHand(null);
-					} else {
-						tool.setAmount(targetAmount);
+					//Check to make sure they're allowed to add slime to this block
+					if(plugin.wgenabled && plugin.wg.canBuild(player, block.getLocation())) {
+						int targetAmount = tool.getAmount() - 1;
+						if (targetAmount <= 0) {
+							player.setItemInHand(null);
+						} else {
+							tool.setAmount(targetAmount);
+						}
+						B.replace(block, slimeRules.withSlime(block));
+						Sound sound = Sound.SLIME_WALK;
+						switch ((int) (Math.rint(Math.random() * 1))) {
+						case 0:
+							sound = Sound.SLIME_WALK;
+							break;
+						case 1:
+							sound = Sound.SLIME_WALK2;
+							break;
+						}
+						player.getWorld().playSound(block.getLocation(), sound, 1, 1);
 					}
-					B.replace(block, slimeRules.withSlime(block));
-
-					Sound sound = Sound.SLIME_WALK;
-					switch ((int) (Math.rint(Math.random() * 1))) {
-					case 0:
-						sound = Sound.SLIME_WALK;
-						break;
-					case 1:
-						sound = Sound.SLIME_WALK2;
-						break;
-					}
-					player.getWorld().playSound(block.getLocation(), sound, 1, 1);
 				}
 			}
 			break;
 		}
 	}
-
 }
