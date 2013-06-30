@@ -8,6 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -34,14 +35,10 @@ public class BlockPunchListener implements Listener {
 		// plugin = main;
 	}
 
-	@EventHandler
+	@EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
 	public void playerBreak(BlockBreakEvent event) {
-		if (event.isCancelled()) {
-			return;
-		}
-
+		
 		// blocks with slime should drop as items without slime + 1 slimeball
-
 		Block block = event.getBlock();
 		if (block == null) {
 			return;
@@ -98,12 +95,8 @@ public class BlockPunchListener implements Listener {
 
 	}
 
-	@EventHandler
+	@EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
 	public void playerInteract(PlayerInteractEvent event) {
-		if (event.isCancelled()) {
-			return;
-		}
-
 		Block block = event.getClickedBlock();
 		if (block == null) {
 			return;
